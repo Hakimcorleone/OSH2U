@@ -121,6 +121,98 @@ const gradeMeaning = { AAA: "Exceptional", AA: "Excellent", A: "Strong", BBB: "S
 const app = document.querySelector("#app");
 let registerStep = 1;
 let registrationDraft = {};
+function preference(key, fallback) { try { return localStorage.getItem(key) || fallback; } catch { return fallback; } }
+function savePreference(key, value) { try { localStorage.setItem(key, value); } catch { /* The current session still works. */ } }
+let currentLang = preference("osh2u.lang", "en") === "ms" ? "ms" : "en";
+const translations = window.OSH2U_TRANSLATIONS || {};
+const originalText = new WeakMap();
+const originalAttributes = new WeakMap();
+
+const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const templateTranslations = Object.entries(translations).filter(([en]) => /\{\w+\}/.test(en)).map(([en, ms]) => {
+  const names = [];
+  let pattern = "^";
+  let cursor = 0;
+  for (const match of en.matchAll(/\{(\w+)\}/g)) {
+    pattern += escapeRegex(en.slice(cursor, match.index)) + "(.+?)";
+    names.push(match[1]);
+    cursor = match.index + match[0].length;
+  }
+  pattern += escapeRegex(en.slice(cursor)) + "$";
+  return { regex: new RegExp(pattern), names, ms };
+}).sort((a, b) => b.regex.source.length - a.regex.source.length);
+
+function translateString(value, lang = currentLang) {
+  if (lang !== "ms" || value == null) return String(value ?? "");
+  const source = String(value).trim();
+  if (!source) return String(value);
+  if (translations[source]) return translations[source];
+  if (/ · |; |, /.test(source)) return source.split(/( · |; |, )/).map(part => /^( · |; |, )$/.test(part) ? part : translateString(part, lang)).join('');
+  if (source.endsWith(' →')) return translateString(source.slice(0, -2), lang) + ' →';
+  for (const template of templateTranslations) {
+    const match = source.match(template.regex);
+    if (!match) continue;
+    let result = template.ms;
+    template.names.forEach((name, index) => { result = result.replaceAll(`{${name}}`, match[index + 1]); });
+    return result;
+  }
+  const patterns = [
+    [/^(\d+) of 5 learner stars$/, "$1 daripada 5 bintang peserta"],
+    [/^(\d+) of (\d+) trainers$/, "$1 daripada $2 jurulatih"],
+    [/^(\d+) verified$/, "$1 disahkan"],
+    [/^(\d+) verified evaluations$/, "$1 penilaian disahkan"],
+    [/^(\d+) credentials verified$/, "$1 kelayakan disahkan"],
+    [/^(\d+) yrs training$/, "$1 tahun melatih"],
+    [/^(\d+) years$/, "$1 tahun"],
+    [/^(\d+) days$/, "$1 hari"],
+    [/^Why (.+)$/, "Mengapa $1"],
+    [/^Need (.+) for a course\?$/, "Perlukan $1 untuk kursus?"],
+    [/^Request (.+)$/, "Minta $1"],
+    [/^(.+) will reply to (.+), normally within 2 working days\.$/, "$1 akan membalas kepada $2, biasanya dalam tempoh 2 hari bekerja."],
+    [/^(.+): (\d+) of 100\. Register median (\d+)\.$/, "$1: $2 daripada 100. Median daftar $3."],
+    [/^Score (\d+) of 100$/, "Skor $1 daripada 100"]
+  ];
+  for (const [regex, replacement] of patterns) if (regex.test(source)) return source.replace(regex, replacement);
+  return source;
+}
+
+function translateDom(root = document) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    if (node.parentElement?.closest('script, style, [translate="no"]')) return;
+    const previous = originalText.get(node);
+    if (!previous || node.nodeValue !== previous.rendered) originalText.set(node, { source: node.nodeValue });
+    const entry = originalText.get(node);
+    const source = entry.source;
+    const trimmed = source.trim();
+    node.nodeValue = trimmed ? source.replace(trimmed, translateString(trimmed)) : source;
+    entry.rendered = node.nodeValue;
+  });
+  root.querySelectorAll?.("[placeholder], [aria-label], [title]").forEach(element => {
+    if (!originalAttributes.has(element)) {
+      originalAttributes.set(element, Object.fromEntries(["placeholder", "aria-label", "title"].filter(name => element.hasAttribute(name)).map(name => [name, element.getAttribute(name)])));
+    }
+    Object.entries(originalAttributes.get(element)).forEach(([name, value]) => element.setAttribute(name, translateString(value)));
+  });
+}
+
+function enhanceMobileTables() {
+  document.querySelectorAll(".data-table").forEach(table => {
+    const labels = [...table.querySelectorAll("thead th")].map(th => th.textContent.trim());
+    table.querySelectorAll("tbody tr").forEach(row => [...row.children].forEach((cell, index) => { cell.dataset.label = labels[index] || ""; }));
+  });
+}
+
+function finalizePage() {
+  document.documentElement.lang = currentLang === "ms" ? "ms" : "en";
+  document.querySelectorAll("[data-lang]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.lang === currentLang)));
+  translateDom(document);
+  enhanceMobileTables();
+  const description = currentLang === "ms" ? "OSH2U ialah penarafan bebas bagi jurulatih keselamatan dan kesihatan pekerjaan di Malaysia." : "OSH2U publishes independent, evidence-led ratings of Malaysian occupational safety and health trainers.";
+  document.querySelector('meta[name="description"]')?.setAttribute("content", description);
+}
 
 const esc = value => String(value ?? "").replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
 const getStore = (key) => { try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; } };
@@ -154,6 +246,14 @@ function specimenCard(trainer = trainers[1]) {
   </article>`;
 }
 
+const featuredName = 'Datuk Wira Ahmad Fakhrul Anuar bin Haji Ismail';
+function featuredCard() {
+  return `<article class="rating-card featured-card"><img class="featured-portrait" src="assets/datuk-wira.jpg" alt="${featuredName}" width="720" height="1080"><div class="featured-body"><p class="eyebrow">Featured trainer</p><h3 translate="no">${featuredName}</h3><p class="muted"><span>Chief Executive Officer</span> · <span translate="no">SHEnviro Hall Sdn Bhd</span></p><div class="featured-status"><span class="grade-mini nr">NR</span><span>Not yet rated by OSH2U</span></div><p>Occupational safety and health practitioner and trainer. Profile supplied in the SHEnviro Hall company profile (2026).</p><a class="card-link" href="#/trainer/datuk-wira-ahmad-fakhrul-anuar">Read the profile →</a></div></article>`;
+}
+function featuredProfile() {
+  app.innerHTML = `<section class="report-head"><div class="container"><div class="breadcrumb"><a href="#/">Home</a> / <span translate="no">${featuredName}</span></div><div class="report-title-grid"><div><p class="eyebrow">Featured trainer</p><h1 translate="no">${featuredName}</h1><p class="lede"><span>Chief Executive Officer</span> · <span translate="no">SHEnviro Hall Sdn Bhd</span></p><div class="featured-status"><span class="grade-mini nr">NR</span><span>Not yet rated by OSH2U</span></div></div><img class="profile-portrait" src="assets/datuk-wira.jpg" alt="${featuredName}" width="720" height="1080"></div></div></section><section class="section surface-section"><div class="container report-grid"><article class="prose"><p class="eyebrow">Professional background</p><h2>Practice and training</h2><p>The company profile describes Fakhrul as an occupational safety and health management practitioner and trainer with more than 10 years of involvement in safety, health and environment.</p><p>His experience includes implementing and maintaining safety and health requirements in manufacturing, with work involving ISO 14001 and OHSAS 18001. The document also describes involvement in NIOSH occupational safety and health management programmes and delivery of public and in-house training.</p><h3>Training approach</h3><p>Practical workplace examples, two-way communication and experience sharing to connect learning with daily operations.</p></article><aside class="sidebar-card"><p class="eyebrow">Qualifications listed in the source</p><ul class="check-list"><li>Degree in Management / Human Resource, International Islamic University, 2002.</li><li>MSc in Occupational Safety and Health Management, Universiti Utara Malaysia, 2008.</li><li>Radiation Protection Officer (RPO) certification following an AELB course and examination.</li></ul><p class="form-note">These qualifications are reported in the company profile and have not been independently verified by OSH2U.</p></aside></div><div class="container disclosure"><strong>Source:</strong> <span>SHEnviro Hall Company Profile 2026, pages 2 and 9. No OSH2U grade, score or learner rating has been assigned.</span></div></section>`;
+}
+
 function homePage() {
   const grades = [
     ["AAA", "Exceptional", "90–100", "Benchmark practitioner with exceptional verified evidence."], ["AA", "Excellent", "80–89", "Very strong on every pillar; any weakness is minor."],
@@ -170,7 +270,7 @@ function homePage() {
       <p class="lede">OSH2U verifies credentials at source, observes trainers teach, and publishes a letter-grade rating with an outlook.</p>
       <div class="button-row"><a class="button" href="#/ratings">Search rated trainers</a><a class="button button-secondary" href="#/register">Register as a trainer</a></div>
       <div class="trust-line"><span>Free for trainers</span><span>Committee decided</span><span>Evidence led</span></div>
-    </div>${specimenCard()}</div></section>
+    </div>${featuredCard()}</div></section>
     <section class="section surface-section"><div class="container"><div class="section-head"><div><p class="eyebrow">The scale</p><h2>Seven grades, one line that matters</h2></div><p class="muted">BBB and above is engagement grade.</p></div>
       <div class="grade-grid">${grades.map((g, i) => `<article class="grade-item ${i < 4 ? "engagement" : "developing"}"><strong>${g[0]}</strong><span>${g[1]} · ${g[2]}</span><p>${g[3]}</p></article>`).join("")}</div>
     </div></section>
@@ -186,8 +286,8 @@ function ratingsPage() {
   app.innerHTML = `<section class="page-hero"><div class="container"><p class="eyebrow">The register</p><h1>Rated trainers</h1><p class="lede">Every trainer who has registered, with their current grade, outlook and learner evidence.</p></div></section>
   <section class="section-tight"><div class="container"><form class="filter-panel" id="trainerFilters">
     <div class="field"><label for="search">Search</label><input id="search" name="search" type="search" placeholder="Name, specialisation or industry"></div>
-    <div class="field"><label for="specFilter">Specialisation</label><select id="specFilter" name="spec"><option value="">All specialisations</option>${specialisations.map(x => `<option>${x}</option>`).join("")}</select></div>
-    <div class="field"><label for="stateFilter">State</label><select id="stateFilter" name="state"><option value="">All states</option>${states.map(x => `<option>${x}</option>`).join("")}</select></div>
+    <div class="field"><label for="specFilter">Specialisation</label><select id="specFilter" name="spec"><option value="">All specialisations</option>${specialisations.map(x => `<option value="${esc(x)}">${x}</option>`).join("")}</select></div>
+    <div class="field"><label for="stateFilter">State</label><select id="stateFilter" name="state"><option value="">All states</option>${states.map(x => `<option value="${esc(x)}">${x}</option>`).join("")}</select></div>
     <div class="field"><label for="bandFilter">Grade band</label><select id="bandFilter" name="band"><option value="">All grades</option><option value="engagement">Engagement grade</option><option value="developing">Developing grade</option><option value="preliminary">Preliminary / NR</option></select></div>
     <label class="checkbox-field"><input type="checkbox" name="hrd"> HRD Corp accredited only</label>
   </form>
@@ -203,18 +303,21 @@ function renderTrainerResults(data) {
   const spec = data.get("spec"); const state = data.get("state"); const band = data.get("band"); const hrd = data.get("hrd");
   const registrations = getStore("osh2u.registrations").map(r => ({ ...r, id: `reg-${r.ref}`, grade: "NR", outlook: "Verification in progress", stars: 0, evaluations: 0, action: "Registered", actionDate: new Date(r.submittedAt).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" }), specs: r.specs || [], years: r.yearsTraining, hrd: (r.credentials || []).some(c => c.type.includes("HRD Corp")), type: r.trainerType }));
   let results = [...trainers, ...registrations].filter(t => {
-    const haystack = [t.name, t.state, t.industries, ...(t.specs || [])].join(" ").toLowerCase();
+    const terms = [t.name, t.state, t.industries, ...(t.specs || [])];
+    const haystack = [...terms, ...terms.map(value => translateString(value, "ms"))].join(" ").toLowerCase();
     const bandMatch = !band || (band === "engagement" && gradeOrder[t.grade] >= 4) || (band === "developing" && isDeveloping(t.grade)) || (band === "preliminary" && ["NR", "BBB(p)"].includes(t.grade));
     return (!search || haystack.includes(search)) && (!spec || t.specs.includes(spec)) && (!state || t.state === state) && bandMatch && (!hrd || t.hrd);
   }).sort((a, b) => gradeOrder[b.grade] - gradeOrder[a.grade] || (b.score || 0) - (a.score || 0));
   const target = document.querySelector("#trainerResults");
-  if (!results.length) { target.innerHTML = `<p class="empty-state">No trainers match these filters. Clear a filter or search a broader term.</p>`; return; }
+  if (!results.length) { target.innerHTML = `<p class="empty-state">No trainers match these filters. Clear a filter or search a broader term.</p>`; finalizePage(); return; }
   target.innerHTML = `<p class="result-count">${results.length} of ${trainers.length + registrations.length} trainers</p><div class="table-wrap"><table class="data-table"><thead><tr><th>Trainer</th><th>Primary specialisation</th><th>State</th><th>Rating</th><th>Outlook</th><th>Learner stars</th><th>Last action</th></tr></thead><tbody>
     ${results.map(t => `<tr><td><a class="trainer-name" href="#/trainer/${t.id}">${esc(t.name)}</a><span class="subline">${esc(t.type)} · ${esc(t.years)} yrs training${t.hrd ? " · HRD Corp" : ""}</span></td><td>${esc(t.specs[0] || "Not supplied")}${t.specs.length > 1 ? `<span class="subline">+${t.specs.length - 1} more</span>` : ""}</td><td>${esc(t.state)}</td><td><span class="grade-mini ${gradeClass(t.grade)}">${t.grade}</span></td><td>${esc(t.outlook)}</td><td>${stars(Number(t.stars))}${t.evaluations ? `<span class="subline">${t.evaluations} verified</span>` : ""}</td><td>${esc(t.action)}<span class="subline">${esc(t.actionDate)}</span></td></tr>`).join("")}
   </tbody></table></div>`;
+  finalizePage();
 }
 
 function trainerPage(id) {
+  if (id === 'datuk-wira-ahmad-fakhrul-anuar') { featuredProfile(); return; }
   let trainer = trainers.find(t => t.id === id);
   if (!trainer && id.startsWith("reg-")) {
     const ref = id.replace("reg-", ""); const r = getStore("osh2u.registrations").find(x => x.ref === ref);
@@ -268,14 +371,14 @@ function stepper() {
   return `<div class="stepper">${labels.map((x, i) => `<div class="step ${i + 1 === registerStep ? "active" : ""} ${i + 1 < registerStep ? "complete" : ""}">${i + 1} <span>${x}</span></div>`).join("")}</div>`;
 }
 function field(name, label, type = "text", extra = "") { return `<div class="field"><label for="${name}">${label}</label><input id="${name}" name="${name}" type="${type}" value="${esc(registrationDraft[name] || "")}" ${extra}></div>`; }
-function selectField(name, label, values, required = false) { return `<div class="field"><label for="${name}">${label}</label><select id="${name}" name="${name}" ${required ? "required" : ""}><option value="">Select</option>${values.map(x => `<option ${registrationDraft[name] === x ? "selected" : ""}>${x}</option>`).join("")}</select></div>`; }
+function selectField(name, label, values, required = false) { return `<div class="field"><label for="${name}">${label}</label><select id="${name}" name="${name}" ${required ? "required" : ""}><option value="">Select</option>${values.map(x => `<option value="${esc(x)}" ${registrationDraft[name] === x ? "selected" : ""}>${x}</option>`).join("")}</select></div>`; }
 function chips(name, values, selected = [], type = "checkbox") { return `<div class="chip-grid">${values.map(x => `<label class="chip"><input type="${type}" name="${name}" value="${esc(x)}" ${selected.includes(x) ? "checked" : ""}><span>${x}</span></label>`).join("")}</div>`; }
 
 function renderRegisterStep(error = "") {
   const root = document.querySelector("#registerMain");
   let body = "";
   if (registerStep === 1) body = `<h2>About you</h2><p class="form-note">Tell us how clients know you and where you are based.</p><div class="form-grid">${field("name", "Full name", "text", "required")}${field("email", "Work email", "email", "required")}${field("phone", "Mobile number", "tel", "required")}${selectField("state", "Base state", states, true)}<div class="field full"><span class="field-label">How do you train?</span>${chips("trainerType", ["Freelance", "With a training provider", "In-house for my employer"], [registrationDraft.trainerType || "Freelance"], "radio")}</div><div class="field full"><span class="field-label">Languages you deliver in</span>${chips("languages", ["Bahasa Malaysia", "English", "Mandarin", "Tamil", "Other"], registrationDraft.languages || [])}</div></div>`;
-  if (registerStep === 2) body = `<h2>Credentials</h2><p class="form-note">List the credentials that should form part of your rating. We verify each at source.</p><div class="form-grid"><div class="field full"><label for="credentialType">Credential</label><select id="credentialType" name="credentialType" required><option value="">Select a credential</option>${credentials.map(x => `<option ${registrationDraft.credentialType === x ? "selected" : ""}>${x}</option>`).join("")}</select></div>${field("credentialNo", "Registration or certificate no.", "text", "required")}${field("validUntil", "Valid until", "month")}${selectField("education", "Highest academic qualification", ["SPM or certificate", "Diploma", "Bachelor's degree", "Master's degree", "Doctorate"])}${field("fieldOfStudy", "Field of study")}</div>`;
+  if (registerStep === 2) body = `<h2>Credentials</h2><p class="form-note">List the credentials that should form part of your rating. We verify each at source.</p><div class="form-grid"><div class="field full"><label for="credentialType">Credential</label><select id="credentialType" name="credentialType" required><option value="">Select a credential</option>${credentials.map(x => `<option value="${esc(x)}" ${registrationDraft.credentialType === x ? "selected" : ""}>${x}</option>`).join("")}</select></div>${field("credentialNo", "Registration or certificate no.", "text", "required")}${field("validUntil", "Valid until", "month")}${selectField("education", "Highest academic qualification", ["SPM or certificate", "Diploma", "Bachelor's degree", "Master's degree", "Doctorate"])}${field("fieldOfStudy", "Field of study")}</div>`;
   if (registerStep === 3) body = `<h2>Your training practice</h2><div class="form-grid"><div class="field full"><span class="field-label">Specialisations — choose up to 5</span>${chips("specs", specialisations, registrationDraft.specs || [])}</div><div class="field full"><span class="field-label">Industries you know from the inside</span>${chips("industries", industries, registrationDraft.industries || [])}</div>${field("yearsPractice", "Years in OSH practice", "number", "min=0 max=60 required")}${field("yearsTraining", "Years delivering training", "number", "min=0 max=60 required")}${field("daysLast12m", "Training days in the last 12 months", "number", "min=0 max=366")}${selectField("coverage", "Where you will travel", ["My state only", "My region", "Peninsular Malaysia", "Nationwide, including Sabah and Sarawak"])}</div>`;
   if (registerStep === 4) body = `<h2>Evidence and references</h2><p class="form-note">Prototype note: file names are recorded locally; files are not uploaded.</p><div class="form-grid"><div class="field full"><label for="files">Certificates, CV or sample materials</label><input id="files" name="files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.ppt,.pptx"></div>${field("ref1Name", "Reference 1: name", "text", "required")}${field("ref1Org", "Organisation", "text", "required")}${field("ref1Email", "Work email", "email", "required")}${field("ref1Course", "Course you delivered")}${field("ref2Name", "Reference 2: name")}${field("ref2Email", "Reference 2: work email", "email")}</div>`;
   if (registerStep === 5) body = `<h2>Check and declare</h2><dl class="review-list"><dt>Name</dt><dd>${esc(registrationDraft.name)}</dd><dt>Contact</dt><dd>${esc(registrationDraft.email)} · ${esc(registrationDraft.phone)}</dd><dt>Base</dt><dd>${esc(registrationDraft.state)} · ${esc(registrationDraft.trainerType)}</dd><dt>Credential</dt><dd>${esc(registrationDraft.credentialType)}</dd><dt>Specialisations</dt><dd>${(registrationDraft.specs || []).map(esc).join("; ")}</dd><dt>Experience</dt><dd>${esc(registrationDraft.yearsPractice)} yrs practice; ${esc(registrationDraft.yearsTraining)} yrs training</dd></dl>
@@ -284,6 +387,7 @@ function renderRegisterStep(error = "") {
   const form = document.querySelector("#registerForm");
   form.addEventListener("submit", handleRegisterStep);
   form.querySelector("[data-prev-step]")?.addEventListener("click", () => { saveForm(form); registerStep--; renderRegisterStep(); window.scrollTo({ top: 260, behavior: "smooth" }); });
+  finalizePage();
 }
 
 function saveForm(form) {
@@ -301,9 +405,10 @@ function handleRegisterStep(event) {
   if ((registrationDraft.specs || []).length > 5) { renderRegisterStep("Choose up to 5 specialisations. Untick one to continue."); return; }
   if (registerStep < 5) { registerStep++; renderRegisterStep(); window.scrollTo({ top: 260, behavior: "smooth" }); return; }
   const existing = getStore("osh2u.registrations"); const year = new Date().getFullYear(); const ref = `OSH2U-${year}-${String(existing.length + 1).padStart(4, "0")}`;
-  const record = { ...registrationDraft, ref, submittedAt: new Date().toISOString(), status: "Received", credentials: [{ type: registrationDraft.credentialType, no: registrationDraft.credentialNo, validUntil: registrationDraft.validUntil }] };
+  const record = { ...registrationDraft, uiLang: currentLang, ref, submittedAt: new Date().toISOString(), status: "Received", credentials: [{ type: registrationDraft.credentialType, no: registrationDraft.credentialNo, validUntil: registrationDraft.validUntil }] };
   const saved = setStore("osh2u.registrations", [...existing, record]);
   document.querySelector("#registerMain").innerHTML = `<div class="success-panel"><div class="success-mark">✓</div><p class="eyebrow">Registration received</p><h2>Thank you, ${esc(record.name.split(" ")[0])}. You are on the register.</h2><p class="reference-code">${ref}</p><p>We will now confirm your credential and contact your references. Expect a private preliminary rating within 10 working days.</p>${!saved ? `<p class="error-box">This browser blocked local storage, so the demo could not save your entry.</p>` : ""}<div class="button-row" style="justify-content:center"><a class="button" href="#/trainer/reg-${ref}">See your register entry</a><a class="button button-secondary" href="#/methodology">How you will be rated</a></div></div>`;
+  finalizePage();
 }
 
 function adminPage() {
@@ -317,7 +422,8 @@ function openRequest(id) {
   const trainer = trainers.find(t => t.id === id); if (!trainer) return;
   const dialog = document.querySelector("#requestDialog"); document.querySelector("#requestTitle").textContent = `Request ${trainer.name}`;
   document.querySelector("#requestDialogBody").innerHTML = `<p class="muted">Tell us what you need. ${trainer.name.split(" ")[0]} will reply to you directly.</p><form id="requestForm"><div class="form-grid">${["name", "company", "email", "pax"].map((n, i) => `<div class="field"><label for="request-${n}">${["Your name", "Company", "Work email", "Number of participants"][i]}</label><input id="request-${n}" name="${n}" type="${n === "email" ? "email" : n === "pax" ? "number" : "text"}" ${n === "pax" ? "min=1" : ""} required></div>`).join("")}<div class="field full"><label for="request-need">What do you need trained, and by when?</label><textarea id="request-need" name="need" required></textarea></div></div><div class="form-actions"><span></span><button class="button" type="submit">Send request</button></div></form>`;
-  document.querySelector("#requestForm").addEventListener("submit", e => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.currentTarget)); const record = { ...data, trainerId: trainer.id, trainer: trainer.name, submittedAt: new Date().toISOString() }; setStore("osh2u.leads", [...getStore("osh2u.leads"), record]); document.querySelector("#requestDialogBody").innerHTML = `<div class="success-panel"><div class="success-mark">✓</div><h3>Request sent.</h3><p>${trainer.name} will reply to ${esc(data.email)}, normally within 2 working days.</p><button class="button" data-close-dialog>Close</button></div>`; });
+  document.querySelector("#requestForm").addEventListener("submit", e => { e.preventDefault(); const data = Object.fromEntries(new FormData(e.currentTarget)); const record = { ...data, uiLang: currentLang, trainerId: trainer.id, trainer: trainer.name, submittedAt: new Date().toISOString() }; setStore("osh2u.leads", [...getStore("osh2u.leads"), record]); document.querySelector("#requestDialogBody").innerHTML = `<div class="success-panel"><div class="success-mark">✓</div><h3>Request sent.</h3><p>${trainer.name} will reply to ${esc(data.email)}, normally within 2 working days.</p><button class="button" data-close-dialog>Close</button></div>`; finalizePage(); });
+  finalizePage();
   dialog.showModal();
 }
 
@@ -332,21 +438,36 @@ function bindGlobalEvents() {
     const request = event.target.closest("[data-request-trainer]"); if (request) openRequest(request.dataset.requestTrainer);
     if (event.target.closest("[data-close-dialog]")) document.querySelector("#requestDialog").close();
     const exp = event.target.closest("[data-export]"); if (exp) { const rows = getStore(exp.dataset.export === "registrations" ? "osh2u.registrations" : "osh2u.leads"); if (!rows.length) return toast("There is no demo data to copy yet."); try { await navigator.clipboard.writeText(csvFor(rows)); toast("CSV copied to clipboard."); } catch { toast("Clipboard is blocked in this browser."); } }
-    if (event.target.closest("[data-clear-demo]")) { localStorage.removeItem("osh2u.registrations"); localStorage.removeItem("osh2u.leads"); adminPage(); toast("Demo data cleared."); }
+    if (event.target.closest("[data-clear-demo]")) { localStorage.removeItem("osh2u.registrations"); localStorage.removeItem("osh2u.leads"); adminPage(); finalizePage(); toast("Demo data cleared."); }
+    const languageButton = event.target.closest("[data-lang]");
+    if (languageButton && languageButton.dataset.lang !== currentLang) {
+      currentLang = languageButton.dataset.lang;
+      savePreference("osh2u.lang", currentLang);
+      finalizePage();
+      updateTitle();
+    }
   });
 }
 
-function toast(message) { const el = document.querySelector("#toast"); el.textContent = message; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 2600); }
+function toast(message) { const el = document.querySelector("#toast"); el.textContent = translateString(message); el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 2600); }
 
 function router() {
   document.querySelector("#mainNav").classList.remove("open"); document.querySelector("#menuButton").setAttribute("aria-expanded", "false");
   const path = location.hash.slice(1) || "/"; const parts = path.split("/").filter(Boolean);
   if (!parts.length) homePage(); else if (parts[0] === "ratings") ratingsPage(); else if (parts[0] === "trainer") trainerPage(parts[1] || ""); else if (parts[0] === "actions") actionsPage(); else if (parts[0] === "methodology") methodologyPage(); else if (parts[0] === "register") registerPage(); else if (parts[0] === "admin") adminPage(); else homePage();
-  window.scrollTo(0, 0); document.title = `${parts[0] ? parts[0][0].toUpperCase() + parts[0].slice(1) + " · " : ""}OSH2U Ratings`;
+  finalizePage();
+  window.scrollTo(0, 0);
+  updateTitle();
+}
+function updateTitle() {
+  const parts = (location.hash.slice(1) || '/').split('/').filter(Boolean);
+  const pageNames = { ratings: "Rated trainers", trainer: "Rating report", actions: "Rating actions", methodology: "Methodology", register: "Trainer registration", admin: "Demo back office" };
+  const pageName = parts[0] === 'trainer' && parts[1] === 'datuk-wira-ahmad-fakhrul-anuar' ? 'Trainer profile' : pageNames[parts[0]];
+  document.title = `${parts[0] ? translateString(pageName || "Home") + " · " : ""}${translateString("OSH2U Ratings")}`;
 }
 
 document.querySelector("#menuButton").addEventListener("click", event => { const nav = document.querySelector("#mainNav"); nav.classList.toggle("open"); event.currentTarget.setAttribute("aria-expanded", String(nav.classList.contains("open"))); });
-document.querySelector("#themeToggle").addEventListener("click", () => { const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = theme; localStorage.setItem("osh2u.theme", theme); });
-document.documentElement.dataset.theme = localStorage.getItem("osh2u.theme") || "light";
+document.querySelector("#themeToggle").addEventListener("click", () => { const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = theme; savePreference("osh2u.theme", theme); });
+document.documentElement.dataset.theme = preference("osh2u.theme", "light");
 window.addEventListener("hashchange", router);
 bindGlobalEvents(); router();

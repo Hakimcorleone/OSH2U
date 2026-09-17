@@ -44,6 +44,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .site-header nav > a:not(.button):hover { color: var(--green); }
 .menu-button { display: none; }
 .theme-toggle { border: 1px solid var(--line); color: var(--ink); background: transparent; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; }
+.language-switch { display: inline-flex; align-items: center; gap: 5px; color: var(--ink-soft); font: 600 11px "DM Mono", monospace; }
+.language-switch button { min-width: 30px; min-height: 34px; padding: 4px; border: 0; border-bottom: 2px solid transparent; color: var(--ink-soft); background: transparent; cursor: pointer; }
+.language-switch button[aria-pressed="true"] { border-color: var(--yellow); color: var(--ink); }
 
 #app { min-height: 70vh; }
 .container { width: min(1180px, 90vw); margin: 0 auto; }
@@ -99,6 +102,31 @@ h3 { font-size: 22px; }
 .pillar-bar > i { display: block; height: 100%; background: var(--green); }
 .pillar-bar > b { position: absolute; top: -3px; width: 2px; height: 13px; background: var(--yellow); }
 .card-link { display: inline-block; margin-top: 20px; font-weight: 700; color: var(--green); }
+.featured-card { padding: 0; overflow: hidden; }
+.featured-portrait { display: block; width: 100%; height: 310px; object-fit: cover; object-position: center 24%; }
+.featured-body { padding: 25px; }
+.featured-body h3 { font-size: 27px; line-height: 1.2; }
+.featured-status { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.profile-portrait { width: 100%; height: auto; max-height: 530px; object-fit: cover; object-position: top; border-radius: var(--radius); }
+.sort-control { max-width: 310px; margin: 24px 0; }
+.chip input:focus-visible + span { outline: 3px solid var(--yellow); }
+@media (max-width: 699px) {
+  .site-header { position: relative; }
+  .language-switch button, .theme-toggle { min-width: 44px; min-height: 44px; }
+  .table-wrap { overflow: visible; background: transparent; border: 0; }
+  .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; min-width: 0; }
+  .data-table thead { position: absolute; clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; }
+  .data-table tbody tr { border: 1px solid var(--line); margin-bottom: 18px; padding: 10px 18px; border-radius: 8px; background: var(--surface); }
+  .data-table td { padding: 11px 0; overflow-wrap: anywhere; }
+  .data-table td::before { content: attr(data-label); display: block; font: 500 10px 'DM Mono', monospace; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
+  .distribution { width: 100%; gap: 10px; padding-inline: 8px; margin: 20px 0 40px; }
+  .dist-bar { min-width: 0; }
+  .action-row { grid-template-columns: 1fr 64px; gap: 10px; }
+  .action-row > :first-child { grid-column: 1 / -1; }
+  .action-row > :nth-child(2) { min-width: 0; }
+  .hero-grid, .report-grid, .form-layout, .report-title-grid { min-width: 0; }
+  .hero h1 { overflow-wrap: break-word; }
+}
 
 .grade-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
 .grade-item { background: var(--surface); padding: 24px 16px; min-height: 190px; }
@@ -228,6 +256,7 @@ h3 { font-size: 22px; }
   .site-header nav { display: none; position: absolute; left: 0; top: 78px; width: 100%; padding: 24px 5vw; background: var(--surface); border-bottom: 1px solid var(--line); flex-direction: column; align-items: stretch; }
   .site-header nav.open { display: flex; }
   .menu-button { display: block; border: 1px solid var(--line); padding: 8px 12px; color: var(--ink); background: transparent; }
+  .language-switch { justify-content: center; }
   .hero-grid, .report-title-grid, .report-grid, .form-layout, .method-grid { grid-template-columns: 1fr; }
   .grade-grid { grid-template-columns: repeat(4, 1fr); }
   .filter-panel { grid-template-columns: 1fr 1fr; }
@@ -237,6 +266,7 @@ h3 { font-size: 22px; }
 }
 
 @media (max-width: 660px) {
+  .site-header { position: relative; top: auto; }
   .prototype-bar span { display: none; }
   .section { padding: 58px 0; }
   .hero { padding-top: 52px; }

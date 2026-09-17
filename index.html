@@ -14,7 +14,7 @@
 </head>
 <body>
   <a class="skip-link" href="#app">Skip to content</a>
-  <div class="prototype-bar">PROTOTYPE v0.1 <span>Every profile and rating shown is a fictional specimen.</span></div>
+  <div class="prototype-bar">PROTOTYPE v0.1 <span>Ratings are fictional specimens. The featured trainer profile is sourced and not yet rated.</span></div>
   <header class="site-header">
     <a class="brand" href="#/" aria-label="OSH2U Ratings home">
       <span>OSH</span><b>2</b><span>U</span><small>Ratings</small>
@@ -25,6 +25,11 @@
       <a href="#/actions">Rating actions</a>
       <a href="#/methodology">Methodology</a>
       <a class="button button-small" href="#/register">Register as a trainer</a>
+      <div class="language-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <span aria-hidden="true">|</span>
+        <button type="button" data-lang="ms" aria-pressed="false">BM</button>
+      </div>
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle colour theme">◐</button>
     </nav>
   </header>
@@ -39,7 +44,7 @@
     <div class="footer-links">
       <a href="#/ratings">Rated trainers</a><a href="#/actions">Rating actions</a><a href="#/methodology">Methodology</a><a href="#/register">Register</a><a href="#/admin">Demo back office</a>
     </div>
-    <p class="fine-print">OSH2U is not affiliated with DOSH, NIOSH Malaysia or HRD Corp. All profiles in this prototype are fictional.</p>
+    <p class="fine-print">OSH2U is not affiliated with DOSH, NIOSH Malaysia or HRD Corp. Rated profiles are fictional specimens; the featured trainer has not been rated.</p>
   </footer>
 
   <dialog id="requestDialog" class="request-dialog" aria-labelledby="requestTitle">
@@ -50,6 +55,7 @@
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="translations.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

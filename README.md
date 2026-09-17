@@ -21,6 +21,8 @@ Then open `http://localhost:8000`.
 - Employer request dialog
 - Browser-local demo back office with CSV export
 - Responsive light and dark themes
+- English and Bahasa Malaysia toggle generated from the bilingual review sheet
+- Sourced featured profile for Datuk Wira Ahmad Fakhrul Anuar bin Haji Ismail, clearly marked not yet rated
 - Hash-based routing that works on GitHub Pages without rewrites
 
 All names, ratings and evidence in this version are fictional. Browser submissions use `localStorage`; there is no production database, authentication, file upload or email integration yet.

@@ -1,0 +1,6 @@
+{
+  "name": "osh2u-ratings",
+  "private": true,
+  "scripts": {"test": "node --test --test-isolation=none tests/app.test.cjs"},
+  "devDependencies": {"jsdom": "^26.1.0"}
+}
