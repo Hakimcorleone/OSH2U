@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="OSH2U publishes independent, evidence-led ratings of Malaysian occupational safety and health trainers.">
+  <meta name="theme-color" content="#073f32">
+  <title>OSH2U Ratings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#app">Skip to content</a>
+  <div class="prototype-bar">PROTOTYPE v0.1 <span>Every profile and rating shown is a fictional specimen.</span></div>
+  <header class="site-header">
+    <a class="brand" href="#/" aria-label="OSH2U Ratings home">
+      <span>OSH</span><b>2</b><span>U</span><small>Ratings</small>
+    </a>
+    <button class="menu-button" id="menuButton" aria-label="Open navigation" aria-expanded="false">Menu</button>
+    <nav id="mainNav" aria-label="Main navigation">
+      <a href="#/ratings">Rated trainers</a>
+      <a href="#/actions">Rating actions</a>
+      <a href="#/methodology">Methodology</a>
+      <a class="button button-small" href="#/register">Register as a trainer</a>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle colour theme">◐</button>
+    </nav>
+  </header>
+
+  <main id="app" tabindex="-1"></main>
+
+  <footer class="site-footer">
+    <div>
+      <a class="brand brand-footer" href="#/" aria-label="OSH2U home"><span>OSH</span><b>2</b><span>U</span></a>
+      <p><strong>OSH2U Ratings.</strong> Prototype v0.1. A rating is an opinion, not a guarantee or regulatory approval.</p>
+    </div>
+    <div class="footer-links">
+      <a href="#/ratings">Rated trainers</a><a href="#/actions">Rating actions</a><a href="#/methodology">Methodology</a><a href="#/register">Register</a><a href="#/admin">Demo back office</a>
+    </div>
+    <p class="fine-print">OSH2U is not affiliated with DOSH, NIOSH Malaysia or HRD Corp. All profiles in this prototype are fictional.</p>
+  </footer>
+
+  <dialog id="requestDialog" class="request-dialog" aria-labelledby="requestTitle">
+    <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+    <p class="eyebrow">Employer request</p>
+    <h2 id="requestTitle">Request a trainer</h2>
+    <div id="requestDialogBody"></div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
