@@ -19,6 +19,7 @@ Then open `http://localhost:8000`.
 - Rating actions and methodology pages
 - Five-step trainer registration flow
 - Employer request dialog
+- Trainer workspace with eight tabs, profile-readiness guidance, interactive availability calendar, review-link flow and employer-request inbox
 - Browser-local demo back office with CSV export
 - Responsive light and dark themes
 - English and Bahasa Malaysia toggle generated from the bilingual review sheet
