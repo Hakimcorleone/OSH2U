@@ -1,6 +1,6 @@
 # OSH2U Ratings
 
-An interactive, zero-build prototype for an independent Malaysian OSH trainer-rating platform.
+An interactive, zero-build v0.3 prototype for an independent Malaysian OSH trainer-rating platform. The deployed application is self-contained in `index.html`.
 
 ## Run locally
 
