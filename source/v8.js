@@ -1,0 +1,113 @@
+/* ========== v8: English only, topic photos, hero carousel, providers page, featured trainers ========== */
+/* BM is switched off until the translation has been checked. The BM strings stay in the code. */
+LANG='en';
+
+/* ---------- topic photos (Unsplash, free licence) ---------- */
+const TOPIC_IMG={'SHO examination preparation':'flipchart','OSH Coordinator (OSH-C)':'classroom','HIRARC and risk assessment':'hirarc','Construction safety':'construction','Working at height and scaffolding':'height','Chemical management and CHRA':'chemical','Noise and hearing conservation':'noise','Ergonomics':'ergonomics','Confined space and gas testing':'confined','Machinery safety and LOTO':'machinery','Electrical safety':'electrical','Fire safety and emergency response':'fire','First aid, CPR and AED':'firstaid','Forklift and defensive driving':'forklift','Accident investigation':'accident','OSH management systems (ISO 45001)':'flipchart','Safety committee and OSH legislation':'classroom','OSH leadership and SHO development':'flipchart'};
+const topicImg=s=>'img/t-'+(TOPIC_IMG[s]||'classroom')+'.webp';
+
+/* a course's topic follows its title where the title says what it is */
+const SPEC_BY_TITLE=[[/ergonom/i,'Ergonomics'],[/first aid|cpr|\baed\b/i,'First aid, CPR and AED'],[/osh-c|coordinator/i,'OSH Coordinator (OSH-C)'],[/height|scaffold/i,'Working at height and scaffolding'],[/confined/i,'Confined space and gas testing'],[/fire|emergency/i,'Fire safety and emergency response'],[/forklift|defensive driving/i,'Forklift and defensive driving'],[/chemical|chra/i,'Chemical management and CHRA'],[/noise|hearing/i,'Noise and hearing conservation'],[/machine|loto|lockout/i,'Machinery safety and LOTO'],[/electric/i,'Electrical safety'],[/hirarc|risk assessment/i,'HIRARC and risk assessment'],[/construction|cidb/i,'Construction safety'],[/accident|incident|investigat/i,'Accident investigation'],[/iso ?45001|management system/i,'OSH management systems (ISO 45001)'],[/committee|legislation/i,'Safety committee and OSH legislation'],[/great sho|leadership/i,'OSH leadership and SHO development'],[/\bsho\b/i,'SHO examination preparation']];
+const _allCourses8=allCourses;
+allCourses=function(){return _allCourses8().map(c=>{if(!c.mine){const m=SPEC_BY_TITLE.find(p=>p[0].test(c.title||''));if(m)c.spec=m[1]}return c})};
+
+/* course cards and the course page get a photo instead of an icon */
+const _ccard8=ccard;
+ccard=function(c,sp){return _ccard8(c,sp).replace(/<a class="ccover" href="([^"]*)" style="[^"]*"/,'<a class="ccover ccover--ph" href="$1"').replace('<span class="ccover__ic">',`<img class="ccover__img" src="${topicImg(c.spec)}" alt="" loading="lazy"><span class="ccover__ic">`)};
+const _coursePage8=coursePage;
+coursePage=function(id){const c=courseById(id);const h=_coursePage8(id);if(!c)return h;
+ return h.replace(/<div class="cbanner"[^>]*><span>[\s\S]*?<\/span><\/div>/,()=>`<div class="cbanner cbanner--ph"><img src="${topicImg(c.spec)}" alt=""><span class="cbanner__ic">${specIcon(c.spec,30,1.8)}</span></div>`)};
+
+/* ---------- hero carousel: search first, then ads and announcements ---------- */
+const HCAR={t:0,i:0,stop:false,go:null,fit:null,ro:null};
+const arw=d=>`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d==='l'?'M15 18l-6-6 6-6':'M9 18l6-6-6-6'}"/></svg>`;
+function heroMain(){return `<div class="wrap"><div class="hero2"><div class="hero2__txt"><p class="kick kick--dark"><b>OSH2U</b> · Independent trainer ratings</p><h1>Find safety training <span class="hl">you can trust.</span></h1><p class="lede">Compare OSH courses and trainers across Malaysia. Credentials checked at source, stars from verified participants.</p>
+ <form class="search" id="homeSearch" role="search"><div><label class="f" for="hs1">What training do you need?</label><select id="hs1" name="spec"><option value="">Any topic</option>${SPECS.map(s=>`<option value="${esc(s)}">${V(s)}</option>`).join('')}</select></div><div><label class="f" for="hs2">Where?</label><select id="hs2" name="state"><option value="">Anywhere in Malaysia</option>${STATES.map(s=>`<option>${s}</option>`).join('')}</select></div><button class="btn btn--y" type="submit">${ti('search',18,2.2)} Search</button></form>
+ <div class="herostats"><span><b>18</b> topics</span><span><b>16</b> states</span><span><b>100%</b> verified reviews</span></div></div>
+ <div class="hero2__art">${heroStack()}<div class="float f1">${ti('shield',18)} <span>Credentials checked at source</span></div><div class="float f2">${ti('star',16)} <span>Stars only from people who attended</span></div></div></div></div>`}
+function heroAd(){const c=courseById('siti-hajar-yusof-0');if(!c)return '';const t=c.t,nx=nextOf(c);
+ return `<div class="wrap hslide"><div class="hslide__txt"><p class="kick kick--dark"><b>Sponsored</b> · Sample ad from a trainer</p><h2 class="hslide__h">${esc(c.title)}</h2><p class="lede">${esc(c.venue)} · ${c.days} days · <b class="mono" style="color:#fff">${rm(c.price)}</b>${c.hrdc?' · HRD Corp claimable':''}</p>
+ <div class="hslide__who"><span class="av av--ring">${initials(t.name)}</span><span><b>${esc(t.name)}</b><span class="hslide__g">${plate(t,'plate--sm')}<span>${avg(t).toFixed(1)} ★ · ${nRev(t)} verified reviews</span></span></span></div>
+ <div class="btns"><a class="btn btn--y" href="#/course/${c.id}">View class →</a><a class="btn btn--ghost-d" href="#/trainer/${t.id}">Trainer profile</a></div></div>
+ <div class="hslide__media" data-tilt="6"><img src="${topicImg(c.spec)}" alt="" loading="lazy"><span class="hslide__tag">Sponsored</span>${nx?`<span class="hslide__date"><small>Next class</small><b>${fd(nx,{day:'numeric',month:'short'})}</b></span>`:''}</div></div>`}
+function heroPilot(){const me=byId(DEMO);
+ return `<div class="wrap hslide"><div class="hslide__txt"><p class="kick kick--dark"><b class="kick__gold">Limited</b> · Trainer pilot</p><h2 class="hslide__h">Only 100 Founder Edition cards.</h2><p class="lede">The trainer pilot is open. The first 100 verified trainers get the black Founder Edition NFC card, numbered 001 to 100, and Pro free until the end of our first year.</p><div class="btns"><a class="btn btn--y" href="#/app/join">Claim a founder spot →</a><a class="btn btn--ghost-d" href="#/for-trainers">What you get</a></div></div>
+ <div class="hslide__media hslide__media--card" data-tilt="6"><img src="img/t-hirarc.webp" alt="" loading="lazy"><span class="hslide__tag hslide__tag--ltd">Limited to 100</span><div class="hslide__card">${tcard(me)}</div></div></div>`}
+function heroProv(){return `<div class="wrap hslide"><div class="hslide__txt"><p class="kick kick--dark"><b>New</b> · For training providers</p><h2 class="hslide__h">Market your classes and trainers here.</h2><p class="lede">A small group of training providers can join the pilot free: a provider page, classes in search and a turn in this banner.</p><div class="btns"><a class="btn btn--y" href="#/providers">Apply for the pilot →</a></div></div>
+ <div class="hslide__media hslide__media--slot" data-tilt="6"><img src="img/t-classroom.webp" alt="" loading="lazy"><span class="hslide__slot"><small>Advertising space</small>Your training centre here</span></div></div>`}
+function heroCar(){const S=[heroMain(),heroAd(),heroPilot(),heroProv()].filter(Boolean),n=S.length;
+ return `<section class="band band--dark band--hero hcar" aria-roledescription="carousel" aria-label="Highlights"><div class="hcar__track" id="hcarTrack">${S.map((s,i)=>`<div class="hcar__slide" role="group" aria-roledescription="slide" aria-label="${i+1} of ${n}">${s}</div>`).join('')}</div>
+ <div class="wrap hcar__ui"><div class="hcar__dots">${S.map((s,i)=>`<button class="hcar__dot${i?'':' on'}" data-hc="${i}" aria-label="Show slide ${i+1}"></button>`).join('')}</div><button class="hcar__arw hcar__arw--p" data-hc="-" aria-label="Previous slide">${arw('l')}</button><button class="hcar__arw" data-hc="+" aria-label="Next slide">${arw('r')}</button></div></section>`}
+function initHcar(){clearInterval(HCAR.t);HCAR.go=null;HCAR.fit=null;const tr=document.getElementById('hcarTrack');if(!tr)return;
+ const sl=[...tr.children],n=sl.length;HCAR.i=0;HCAR.stop=false;
+ const reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+ const fit=()=>{let h=0;sl.forEach(x=>{const c=x.firstElementChild;if(!c)return;const st=getComputedStyle(x);h=Math.max(h,c.offsetHeight+parseFloat(st.paddingTop)+parseFloat(st.paddingBottom))});if(!h)return;sl.forEach(x=>x.style.height=h+'px');tr.style.height=h+'px'};
+ const ui=()=>{document.querySelectorAll('.hcar__dot').forEach((d,k)=>{d.classList.toggle('on',k===HCAR.i);d.setAttribute('aria-current',k===HCAR.i?'true':'false')});const el=document.getElementById('hcarN');if(el)el.textContent=String(HCAR.i+1).padStart(2,'0');fit()};
+ const go=i=>{HCAR.i=(i+n)%n;tr.scrollTo({left:sl[HCAR.i].offsetLeft,behavior:reduce?'auto':'smooth'});ui()};
+ tr.addEventListener('scroll',()=>{clearTimeout(tr._t);tr._t=setTimeout(()=>{const i=Math.round(tr.scrollLeft/Math.max(1,tr.clientWidth));if(i!==HCAR.i&&i>=0&&i<n){HCAR.i=i;ui()}},90)},{passive:true});
+ const play=()=>{clearInterval(HCAR.t);if(reduce||HCAR.stop||n<2)return;HCAR.t=setInterval(()=>{if(!document.hidden)go(HCAR.i+1)},7000)};
+ const hold=()=>clearInterval(HCAR.t);
+ const car=tr.closest('.hcar');car.addEventListener('mouseenter',hold);car.addEventListener('mouseleave',play);car.addEventListener('focusin',hold);
+ tr.addEventListener('touchstart',()=>{HCAR.stop=true;hold()},{passive:true});
+ tr.querySelectorAll('img').forEach(im=>im.addEventListener('load',fit));
+ if(HCAR.ro)HCAR.ro.disconnect();if(window.ResizeObserver){HCAR.ro=new ResizeObserver(()=>fit());sl.forEach(x=>{if(x.firstElementChild)HCAR.ro.observe(x.firstElementChild)})}if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
+ HCAR.go=go;HCAR.fit=fit;fit();setTimeout(fit,300);setTimeout(fit,1200);play()}
+window.addEventListener('resize',()=>{if(HCAR.fit)HCAR.fit()});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-hc]');if(!b||!HCAR.go)return;HCAR.stop=true;clearInterval(HCAR.t);const v=b.dataset.hc;HCAR.go(v==='+'?HCAR.i+1:v==='-'?HCAR.i-1:+v)});
+
+/* ---------- home ---------- */
+function dutyStrip(){return `<section class="duty3" aria-label="Your legal duty"><div class="wrap duty3__in"><span class="duty3__alert" aria-hidden="true">!</span><div class="duty3__txt"><p class="duty3__k">Your legal duty</p><h2>Five or more employees? You need an OSH Coordinator.</h2><p>OSHA section 29A, in force since 1 June 2024. Fines up to RM50,000.</p></div><a class="btn duty3__btn" href="#/find" data-act="qchip" data-v="OSH Coordinator (OSH-C)">Find OSH-C training →</a></div></section>`}
+const kickT=(t,dark)=>`<p class="kick kick--t${dark?' kick--dark':''}">${t}</p>`;
+home=function(){const cs=allCourses();const up=cs.filter(c=>nextOf(c)).sort((a,b)=>nextOf(a).localeCompare(nextOf(b))).slice(0,3);
+ const topics=['OSH Coordinator (OSH-C)','First aid, CPR and AED','Working at height and scaffolding','Fire safety and emergency response','Confined space and gas testing','HIRARC and risk assessment'];
+ const count=s=>cs.filter(c=>c.spec===s).length;
+ const top=['hafizuddin-rahman','lim-chee-keong','siti-hajar-yusof'].map(id=>byId(id));
+ return heroCar()+dutyStrip()
+ +band('band--light',`${kickT('Find training')}<div class="sechead"><h2>Start with the topic.</h2><a class="btn btn--ghost btn--sm" href="#/find">All 18 topics →</a></div>
+ <div class="bento">${topics.map((s,i)=>{const k=count(s);return `<a class="btile btile--${i}" href="#/find" data-act="qchip" data-v="${esc(s)}"><img src="${topicImg(s)}" alt="" loading="lazy"><span class="btile__ic">${specIcon(s,22,2)}</span><span class="btile__b"><b>${V(s)}</b><span>${k?k+(k===1?' course':' courses'):'Browse trainers'} →</span></span></a>`}).join('')}</div>
+ <div class="tmore"><span class="tmore__l">More topics</span>${SPECS.filter(s=>!topics.includes(s)).map(s=>`<a class="tchip" href="#/find" data-act="qchip" data-v="${esc(s)}">${specIcon(s,16,2)}<span>${V(s)}</span></a>`).join('')}</div>`)
+ +band('band--white',`${kickT('Upcoming classes')}<div class="sechead"><h2>Book a seat for your team.</h2><a class="btn btn--ghost btn--sm" href="#/find">See all training →</a></div><div class="cgrid swipe">${up.map(c=>ccard(c)).join('')}</div><p class="swipehint small muted">Swipe for more →</p>`)
+ +band('band--dark',`${kickT('Rated by participants',true)}<div class="sechead"><h2 style="color:#fff">Top-rated, in their participants’ words.</h2><a class="btn btn--sm btn--y" href="#/ratings">All trainers →</a></div><div class="qgrid swipe">${top.map(t=>`<a class="tq" href="#/trainer/${t.id}"><div class="tq__top"><span class="av av--ring">${initials(t.name)}</span><div><b>${esc(t.name)}</b><br><span class="small" style="color:#A3A3A3">${V(t.specs[0])}</span></div>${plate(t,'plate--sm')}</div><span class="qmark" aria-hidden="true">“</span><blockquote>${P(t.rt)[0]}</blockquote><div>${starsum(t)}</div></a>`).join('')}</div><p class="swipehint small" style="color:#A3A3A3">Swipe for more →</p>`)
+ +band('band--white',`<div class="ctaband__in" style="padding:0"><div>${kickT('For trainers')}<h2>Carry your rating in your pocket.</h2><p>Get verified and list your classes. At the end of each class, participants tap your OSH2U NFC card and your review form opens on their phone. Free during the pilot, and the first 100 trainers carry the black Founder Edition.</p><div class="btns"><a class="btn btn--y" href="#/app/join">Join as a trainer</a><a class="btn btn--ghost" href="#/for-trainers">What you get</a></div></div><div class="ctaband__card"><span class="ltd"><i></i>Founder Edition · only 100</span>${nfcStage()}</div></div>`)};
+
+/* ---------- trainers register: sponsored spots at the top ---------- */
+function featHead(){const ids=['kavitha-subramaniam','rajendran-pillai','azman-shah-ibrahim'];
+ return `<section class="feat"><div class="feat__top"><div>${kick('Register','Every trainer, one scale',true)}<h1>Rated trainers.</h1><p>Grades come from verified participant stars and credentials checked at source. Trainers still building their record show as Registered.</p></div><a class="btn btn--sm btn--y" href="#/methodology">How ratings work →</a></div>
+ <div class="feat__lbl"><span class="pill pill--y">Sponsored</span><b>Featured trainers</b><span class="feat__note">Paid placement. It never changes a grade or a trainer’s place in the list below.</span></div>
+ <div class="feat__row">${ids.map(id=>{const t=byId(id);return `<a class="fcard" href="#/trainer/${t.id}"><span class="fcard__ph"><img src="${PHOTOS[t.id]}" alt=""></span><span class="fcard__b"><span class="fcard__nm">${esc(t.name)}</span><span class="fcard__s">${V(t.specs[0])} · ${esc(t.state)}</span><span class="fcard__r">${plate(t,'plate--sm')}<b>${avg(t).toFixed(1)}</b>${stars(avg(t))}</span></span><span class="fcard__tag">Sponsored</span></a>`}).join('')}<a class="fcard fcard--ad" href="#/app/more/plan"><b>Your profile here</b><span>Featured spot: free in the pilot, then RM20 for 30 days, or one a month with Pro.</span><span class="fcard__go">Get featured →</span></a></div></section>`}
+const _ratings8=ratings;
+ratings=function(){return _ratings8().replace(/<section class="pagehead">[\s\S]*?<\/section>/,()=>featHead())};
+
+/* ---------- training providers (pilot) ---------- */
+function providers(){const sent=PROV_SENT;
+ return band('band--hero band--ivory',`<div class="phero"><div class="phero__txt">${kick('Pilot','For training providers',true)}<h1>Market your training and your trainers <span class="hl">on OSH2U.</span></h1><p class="lede">We are opening the pilot to a small group of training providers. List your classes, link your trainers and get featured where employers look. Free while the pilot runs.</p><div class="btns"><a class="btn btn--y" href="#/providers" data-act="toapply">Apply for the pilot →</a></div><p class="phero__fine">Limited places · No fee · No contract</p></div><div class="phero__media" data-tilt="6"><img src="img/t-classroom.webp" alt=""><span class="phero__chip"><b>Free</b>during the pilot</span><span class="phero__chip phero__chip--2">${ti('star',16)} Your trainers’ grades on your page</span></div></div>`)
+ +stripe(12)
+ +band('band--light',`${kick('01','What you get')}<h2>Everything you need to fill a class.</h2><div class="pgrid">${[
+  ['book','A page for your centre','Your centre, your trainers and every class on one page, linked to their ratings.'],
+  ['search','Your classes in search','Public and in-house classes show in Find training with dates, venues, prices and HRD Corp claimability.'],
+  ['star','A turn in the home banner','Pilot providers rotate through the home page carousel and the Sponsored row in Find training.'],
+  ['people','Your trainers, linked','Their grades and verified reviews show on your page, so their record sells the class.'],
+  ['clip','Review links for every class','Upload a class list and each participant gets a review link, so grades build faster.'],
+  ['shield','Enquiries straight to you','Employers contact you directly. No booking fee and no commission.']
+ ].map((c,i)=>`<div class="pcard2"><span class="pcard2__n mono">${String(i+1).padStart(2,'0')}</span><span class="pcard2__ic">${ti(c[0],26,1.8)}</span><h3>${c[1]}</h3><p>${c[2]}</p></div>`).join('')}</div>`)
+ +`<section class="duty3 duty3--free" aria-label="Pilot pricing"><div class="wrap duty3__in"><span class="duty3__alert duty3__alert--txt" aria-hidden="true">RM0</span><div class="duty3__txt"><p class="duty3__k"><b>02</b> · Pilot pricing</p><h2>Free while the pilot runs.</h2><p>We will publish provider pricing before the pilot ends. You decide then whether to stay. Nothing renews by itself.</p></div><a class="btn duty3__btn" href="#/providers" data-act="toapply">Apply now →</a></div></section>`
+ +band('band--white',`${kick('03','How the pilot works')}<h2>Four steps, no paperwork.</h2><ol class="psteps">${[['Apply','Tell us about your centre and the training you run. It takes two minutes.'],['Verify','We call you, then check your centre and your trainers’ credentials at source.'],['Go live','Your page, your classes and your first home page feature go live together.'],['Shape the plan','A short monthly check-in. You help decide what the paid plan includes.']].map((s,i)=>`<li><span class="psteps__n mono">0${i+1}</span><b>${s[0]}</b><p>${s[1]}</p></li>`).join('')}</ol>`)
+ +band('band--dark',`${kick('04','Fair to every trainer',true)}<h2 style="color:#fff">Paying never buys a grade.</h2><div class="pfair">${[['Sponsored is always labelled','Every paid placement says Sponsored, wherever it appears.'],['Grades stay independent','A grade comes only from verified participant stars and credentials checked at source.'],['The list stays the list','Paying never moves a trainer up the trainer list.']].map(c=>`<div><span class="pfair__ic">${ti('shield',22,1.8)}</span><b>${c[0]}</b><p>${c[1]}</p></div>`).join('')}</div>`)
+ +band('band--light',`<div class="papply" id="apply"><div>${kick('05','Apply')}<h2>Join the provider pilot.</h2><p class="lede" style="color:#333">Tell us who you are and what you teach. We reply to every application by email.</p>
+ <div class="pfaq">${[['Is the pilot really free?','Yes. There is no fee while the pilot runs.'],['What happens after the pilot?','We publish provider pricing before the pilot ends. You choose whether to stay on a paid plan.'],['Do you take commission?','No. Employers contact you directly and you keep the whole fee.'],['Can paying improve a grade?','No. Grades come only from verified participant stars and credentials checked at source.']].map(q=>`<details><summary>${q[0]}</summary><p>${q[1]}</p></details>`).join('')}</div></div>
+ ${sent?`<div class="panel pform pform--done"><span class="pcard2__ic">${ti('star',26,1.8)}</span><h3>Thank you, ${esc(sent.name)}.</h3><p>Your application for ${esc(sent.centre)} is in. We will email ${esc(sent.email)} about the next step.</p><p class="small muted">Prototype: applications are saved in this browser only.</p></div>`
+ :`<form class="panel pform" id="provF"><div><label class="f" for="pf1">Training centre name</label><input type="text" id="pf1" name="centre" required autocomplete="organization"></div><div><label class="f" for="pf2">Your name</label><input type="text" id="pf2" name="name" required autocomplete="name"></div>
+ <div class="pform__2"><div><label class="f" for="pf3">Work email</label><input type="email" id="pf3" name="email" required autocomplete="email"></div><div><label class="f" for="pf4">Phone</label><input type="tel" id="pf4" name="phone" autocomplete="tel"></div></div>
+ <div class="pform__2"><div><label class="f" for="pf5">Trainers</label><select id="pf5" name="trainers"><option>1 to 5</option><option>6 to 15</option><option>16 or more</option></select></div><div><label class="f" for="pf6">State</label><select id="pf6" name="state">${STATES.map(s=>`<option>${s}</option>`).join('')}</select></div></div>
+ <div><label class="f" for="pf7">Main topics</label><input type="text" id="pf7" name="topics" placeholder="For example: OSH-C, first aid, working at height"></div>
+ <label class="chk"><input type="checkbox" name="hrdc"> HRD Corp registered training provider</label>
+ <button class="btn btn--y" type="submit">Apply for the pilot →</button><p class="small muted" style="margin:0">Prototype: applications are saved in this browser only.</p></form>`}</div>`)}
+let PROV_SENT=null;
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-act="toapply"]');if(!b)return;e.preventDefault();const a=document.getElementById('apply');if(a)a.scrollIntoView({behavior:'smooth',block:'start'})});
+document.addEventListener('submit',e=>{const f=e.target;if(!f||f.id!=='provF')return;e.preventDefault();if(f.reportValidity&&!f.reportValidity())return;
+ const d=Object.fromEntries(new FormData(f));d.at=new Date().toISOString();try{const a=JSON.parse(localStorage.getItem('osh2u.providers')||'[]');a.push(d);localStorage.setItem('osh2u.providers',JSON.stringify(a))}catch(err){}
+ PROV_SENT=d;render();const a=document.getElementById('apply');if(a)a.scrollIntoView({block:'start'})});
+
+/* ---------- render: providers is a full-width page; start the carousel ---------- */
+const _render8=render;
+render=function(){clearInterval(HCAR.t);_render8();const r=route()[0];document.getElementById('app').classList.toggle('full',r===''||r==='methodology'||r==='providers');if(r!=='providers')PROV_SENT=null;initHcar()};

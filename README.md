@@ -1,29 +1,38 @@
-# OSH2U Ratings
+# OSH2U website and trainer app (prototype)
 
-An interactive, zero-build v0.3 prototype for an independent Malaysian OSH trainer-rating platform. The deployed application is self-contained in `index.html`.
+A static site with no build step and no backend. Everything a visitor does (enquiries, the trainer app, sample data) stays in their own browser.
 
-## Run locally
+## Deploy on Vercel
 
-Open `index.html` directly, or serve the folder with any static server:
+1. Make a new repository on GitHub and upload everything in this folder, keeping the folders as they are. `vercel.json` must be at the top level next to `index.html`.
+2. On vercel.com choose **Add New › Project**, then import that repository.
+3. Framework preset: **Other**. Leave the build command and output directory empty.
+4. Deploy. Every push to the main branch deploys again.
 
-```powershell
-python -m http.server 8000
+To use osh2u.my, open the project's **Settings › Domains**, add the domain, and set the DNS records Vercel shows at your registrar.
+
+## What is in here
+
+| Path | What it is |
+|---|---|
+| `index.html` | The whole site in one file (fonts and trainer photos are built in) |
+| `img/` | Topic photos |
+| `favicon.svg`, `robots.txt`, `vercel.json` | Icon, crawler rules and Vercel headers |
+| `source/` | The parts `index.html` is built from. Not deployed (see `.vercelignore`) |
+
+## Editing
+
+Edit the files in `source/`, then rebuild:
+
+```
+cd source
+python3 build.py
 ```
 
-Then open `http://localhost:8000`.
+This rewrites `../index.html`. It needs Python 3 and nothing else. Commit and push to redeploy.
 
-## Prototype features
+## Before going public
 
-- Searchable trainer register with 14 fictional specimen profiles
-- Data-driven trainer rating reports and evidence pillars
-- Rating actions and methodology pages
-- Five-step trainer registration flow
-- Employer request dialog
-- Trainer workspace with eight tabs, profile-readiness guidance, interactive availability calendar, review-link flow and employer-request inbox
-- Browser-local demo back office with CSV export
-- Responsive light and dark themes
-- English and Bahasa Malaysia toggle generated from the bilingual review sheet
-- Sourced featured profile for Datuk Wira Ahmad Fakhrul Anuar bin Haji Ismail, clearly marked not yet rated
-- Hash-based routing that works on GitHub Pages without rewrites
-
-All names, ratings and evidence in this version are fictional. Browser submissions use `localStorage`; there is no production database, authentication, file upload or email integration yet.
+- The site tells search engines not to index it (the robots meta tag in `source/build.py`, the `X-Robots-Tag` header in `vercel.json`, and `robots.txt`). Remove all three when you launch.
+- Trainer photos are AI-generated, except the sample profile. Confirm that person's consent before the site is public.
+- Fonts are under the SIL Open Font License: Bricolage Grotesque, Plus Jakarta Sans, JetBrains Mono and Cormorant Garamond. Topic photos are from Unsplash.

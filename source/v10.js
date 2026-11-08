@@ -1,0 +1,7 @@
+/* ========== v10: duotone icons across the site and the trainer app ========== */
+const ph=(n,s,cls)=>{const p=PH[n];if(!p)return '';return `<svg class="ph${cls?' '+cls:''}" width="${s||24}" height="${s||24}" viewBox="0 0 256 256" aria-hidden="true" focusable="false"><g class="ph-a">${p[0]}</g><g class="ph-b">${p[1]}</g></svg>`};
+const TI2PH={hardhat:'hard-hat',cross:'first-aid',flask:'flask',ladder:'ladder',forklift:'steering-wheel',flame:'fire-extinguisher',sound:'ear',gear:'gear',bolt:'lightning',clip:'clipboard-text',ergo:'office-chair',manhole:'cylinder',search:'magnifying-glass',book:'book-open',shield:'shield-check',people:'users-three',star:'star'};
+const _ti10=ti;
+ti=(k,sz,sw)=>TI2PH[k]?ph(TI2PH[k],sz):_ti10(k,sz,sw);
+const SPEC_PH={'SHO examination preparation':'graduation-cap','OSH Coordinator (OSH-C)':'hard-hat','HIRARC and risk assessment':'clipboard-text','Construction safety':'traffic-cone','Working at height and scaffolding':'ladder','Chemical management and CHRA':'flask','Noise and hearing conservation':'ear','Ergonomics':'office-chair','Confined space and gas testing':'cylinder','Machinery safety and LOTO':'gear','Electrical safety':'lightning','Fire safety and emergency response':'fire-extinguisher','First aid, CPR and AED':'first-aid','Forklift and defensive driving':'steering-wheel','Accident investigation':'magnifying-glass','OSH management systems (ISO 45001)':'seal-check','Safety committee and OSH legislation':'users-three','OSH leadership and SHO development':'medal'};
+specIcon=(s,sz,sw)=>ph(SPEC_PH[s]||'hard-hat',sz);

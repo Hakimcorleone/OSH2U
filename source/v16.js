@@ -1,0 +1,8 @@
+/* ---------- v16: Find training gets a yellow top card with sponsored classes ---------- */
+function sclass16(c){const nx=nextOf(c);return `<a class="sclass" href="#/course/${c.id}"><span class="sclass__img"><img src="${topicImg(c.spec)}" alt="" loading="lazy"><span class="sclass__tag">Sponsored</span></span><span class="sclass__b"><b>${esc(c.title)}</b><span class="sclass__m">${nx?fd(nx,{day:'numeric',month:'short'})+' · ':''}${esc(c.venue)}</span><span class="sclass__f">${plate(c.t,'plate--sm')}<span class="sclass__p mono">${rm(c.price)}</span></span></span></a>`}
+function findHead16(){const cs=allCourses().filter(c=>!c.mine&&nextOf(c)).sort((a,b)=>nextOf(a).localeCompare(nextOf(b)));
+ const seen=new Set(),sp=[];for(const c of cs){if(seen.has(c.t.id))continue;seen.add(c.t.id);sp.push(c);if(sp.length===3)break}
+ return `<section class="pagehead ph16--find"><div class="ph16__top"><div><p class="eyebrow">Find training</p><h1>OSH courses near you</h1><p class="ph16__sub">Compare classes, dates and prices, with each trainer’s grade alongside.</p></div><span class="pagehead__ic">${ti('search',70,1.4)}</span></div>`
+ +`<div class="feat__lbl ph16__lbl"><span class="pill pill--y">Sponsored</span><b>Featured classes</b><span class="feat__note">Paid placement. It never changes a grade or a class’s place in the results below.</span></div>`
+ +`<div class="ph16__row">${sp.map(sclass16).join('')}<a class="ph16__slot" href="#/for-trainers"><small>Advertising space</small><b>Your class here</b><span>Boost a class for RM20 for 30 days, shown as Sponsored.</span><em>See plans →</em></a></div></section>`}
+const _find16=find;find=function(){return _find16().replace(/^<section class="pagehead">[\s\S]*?<\/section>/,findHead16())};
